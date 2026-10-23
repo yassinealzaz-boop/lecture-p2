@@ -1,0 +1,77 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Récitation</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{--bg:#f2f5f2;--card:#fff;--tx:#14201a;--mut:#62706a;--ok:#13795b;--bad:#c23a2b;--miss:#b4690e;--acc:#0e5a49;--ln:#d9e1dc}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1512;--card:#17211c;--tx:#e6eee9;--mut:#8fa196;--ok:#4cc38a;--bad:#ff7d6e;--miss:#f0a53c;--acc:#46b89a;--ln:#2a3830}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,sans-serif;padding:max(24px,env(safe-area-inset-top)) 16px 120px}
+h1{font-size:26px;margin:0}h2{font-size:15px;margin:24px 0 8px;color:var(--mut);font-weight:600}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{background:var(--card);border:1px solid var(--ln);border-radius:99px;padding:6px 14px;font:inherit;font-size:14px;color:inherit}
+.card{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;margin:8px 0;color:inherit;font:inherit;text-align:left}
+.ar{font-family:"Noto Naskh Arabic","Amiri","Traditional Arabic",serif;direction:rtl}
+.card .ar{font-size:24px}
+.txt{direction:rtl;text-align:right;font-size:30px;line-height:2.5;margin-top:18px}
+.w{display:inline-block;padding:0 4px;border-radius:6px}
+.w.ok{color:var(--ok)}
+.w.bad{color:var(--bad);border-bottom:3px solid var(--bad)}
+.w.miss{color:var(--miss);border-bottom:3px dashed var(--miss)}
+.w.h{color:transparent;background:var(--ln)}
+.w.cur{outline:2px solid var(--acc)}
+.mut,small{color:var(--mut)}
+.bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:14px 16px calc(20px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 45%)}
+#mic{width:68px;height:68px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:28px}
+#mic.on{background:var(--bad)}
+</style></head><body><div id="app"></div>
+<script>
+const A=s=>String(s).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const S=[
+{n:'الفاتحة',f:'Al-Fâtiha',v:'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ|الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ|الرَّحْمَٰنِ الرَّحِيمِ|مَالِكِ يَوْمِ الدِّينِ|إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ|اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ|صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ'},
+{n:'الإخلاص',f:'Al-Ikhlâs',v:'قُلْ هُوَ اللَّهُ أَحَدٌ|اللَّهُ الصَّمَدُ|لَمْ يَلِدْ وَلَمْ يُولَدْ|وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ'},
+{n:'الفلق',f:'Al-Falaq',v:'قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ|مِن شَرِّ مَا خَلَقَ|وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ|وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ|وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ'},
+{n:'الناس',f:'An-Nâs',v:'قُلْ أَعُوذُ بِرَبِّ النَّاسِ|مَلِكِ النَّاسِ|إِلَٰهِ النَّاسِ|مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ|الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ|مِنَ الْجِنَّةِ وَالنَّاسِ'}];
+const $=s=>document.querySelector(s);
+const say=t=>{const e=$('#st');if(e)e.textContent=t};
+const mic=f=>{const e=$('#mic');if(e)e.className=f?'on':''};
+const norm=s=>s.replace(/[\u064B-\u065F\u0670\u0640\u06D6-\u06ED]/g,'').replace(/[إأآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي');
+const lev=(a,b)=>{const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]!==b[j-1]));p=t}}return d[b.length]};
+const like=(a,b)=>a===b||(Math.max(a.length,b.length)>3&&1-lev(a,b)/Math.max(a.length,b.length)>=.7);
+let k=-1,E=[],base=[],res=[],on=false,hide=true,done=false;
+const L=()=>{try{return JSON.parse(localStorage.t||'{}')}catch(e){return{}}};
+const Sv=o=>{try{localStorage.t=JSON.stringify(o)}catch(e){}};
+const key=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+function streak(){const D=new Set(L().days||[]);let n=0,d=new Date();if(!D.has(key(d)))d.setDate(d.getDate()-1);while(D.has(key(d))){n++;d.setDate(d.getDate()-1)}return n}
+// Détection d’erreurs : compare les mots dits aux mots attendus
+function align(sp){const r=[];let i=0;for(const w of sp){if(i>=E.length)break;
+ if(like(w,E[i]))r[i++]='ok';
+ else if(i+1<E.length&&like(w,E[i+1])){r[i]='miss';r[i+1]='ok';i+=2}
+ else if(i>0&&like(w,E[i-1])){}
+ else r[i++]='bad'}
+ return r}
+function home(){k=-1;const top=Object.entries(L().m||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
+$('#app').innerHTML=`<div class=top><h1>Récitation</h1><span class=chip>🔥 ${streak()} j</span></div>
+<h2>Choisis une sourate</h2>${S.map((s,i)=>`<button class=card onclick=openS(${i})><span>${s.f}<br><small>${s.v.split('|').length} versets</small></span><span class=ar>${s.n}</span></button>`).join('')}
+<h2>Mots à revoir</h2>${top.length?top.map(([q,c])=>{const[a,b]=q.split(':');const w=S[a].v.split('|').join(' ').split(' ')[b];return`<div class=card><span>${S[a].f}, ${c} fois</span><span class=ar>${w}</span></div>`}).join(''):'<p class=mut>Aucune erreur pour l’instant.</p>'}`}
+function openS(i){halt();k=i;base=[];res=[];done=false;E=[];let n=0;
+const h=S[i].v.split('|').map((v,j)=>v.split(' ').map(w=>{E.push(norm(w));return`<span class=w data-i=${n++}>${w}</span>`}).join(' ')+` <span class=ar>﴿${A(j+1)}﴾</span>`).join(' ');
+$('#app').innerHTML=`<div class=top><button class=chip onclick="halt();home()">← Retour</button><label class=chip><input type=checkbox ${hide?'checked':''} onchange="hide=this.checked;paint()"> Texte masqué</label></div>
+<div class="txt ar" id=txt>${h}</div><p id=st class=mut>Touche le micro et récite.</p><p class=mut><small>Vert : juste. Orange : mot oublié. Rouge : mot erroné.</small></p><div id=sum></div>
+<div class=bar><button id=mic onclick=toggle()>🎙</button></div>`;
+$('#txt').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;const o=[undefined,'ok','bad','miss'];res[i]=o[(o.indexOf(res[i])+1)%4];paint()};
+paint()}
+function paint(){let c=0;while(res[c])c++;
+document.querySelectorAll('.w').forEach((s,i)=>{s.className='w '+(res[i]||(hide?'h':''))+(i==c&&on?' cur':'')});
+if(E.length&&c>=E.length&&!done)finish()}
+function toggle(){if(on)return halt();if(done)return openS(k);
+if(!window.Android){say('Micro indisponible ici. Touche les mots pour les valider.');return}
+on=true;mic(1);say('Écoute en cours…');Android.start();paint()}
+function halt(){if(on&&window.Android)Android.stop();on=false;mic(0)}
+window.onTranscript=(t,fin)=>{const all=base.concat(t.trim().split(/\s+/).filter(Boolean).map(norm));res=align(all);if(fin)base=all;paint()};
+window.onSpeechError=m=>{on=false;mic(0);say(m);paint()};
+function finish(){done=true;halt();const n=x=>res.filter(r=>r==x).length,ok=n('ok'),bad=n('bad'),miss=n('miss');
+const d=L();d.days=[...new Set([...(d.days||[]),key(new Date())])];d.m=d.m||{};
+res.forEach((r,i)=>{if(r=='bad'||r=='miss'){const q=k+':'+i;d.m[q]=(d.m[q]||0)+1}});Sv(d);
+say('Terminé.');
+$('#sum').innerHTML=`<div class=card style="display:block"><b>${Math.round(100*ok/E.length)} % de mots justes</b><br>${ok} justes, ${bad} erronés, ${miss} oubliés.<br><br><button class=chip onclick=openS(k)>Recommencer</button></div>`}
+home();
+</script></body></html>
